@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1115">
+<meta name="description" content="Hermes Agent First Useful Task console: setup complete, pick a starter task, watch tools and skills work, Succeeded or Stalled, save a reusable skill. Prototype with synthetic data only.">
+<title>Hermes Agent · First Useful Task</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1115;
+    --surface:#161b21;
+    --surface-2:#1c222b;
+    --line:rgba(255,255,255,.10);
+    --line-soft:rgba(255,255,255,.06);
+    --text:#f1f3f7;
+    --muted:#9ba5b1;
+    --faint:#707a87;
+    --teal:#2dd4a4;
+    --teal-soft:rgba(45,212,164,.14);
+    --amber:#f5a524;
+    --amber-soft:rgba(245,165,36,.14);
+    --violet:#8f9df6;
+    --violet-soft:rgba(143,157,246,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg)}
+  body{
+    color:var(--text);
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .wrap{max-width:620px;margin:0 auto;padding:20px 16px 40px}
+
+  /* ---------- masthead ---------- */
+  .masthead{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+  .logo{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--violet),var(--teal));flex:none}
+  .brand{font-weight:700;font-size:15px;letter-spacing:.01em;color:var(--text)}
+  .brand .dim{color:var(--muted)}
+  .ver{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint);border:1px solid var(--line-soft);border-radius:99px;padding:2px 8px;background:var(--surface-2)}
+
+  /* ---------- hero copy ---------- */
+  .title{font-size:22px;font-weight:700;letter-spacing:-.01em;margin:22px 0 6px}
+  .lede{font-size:14px;color:var(--muted);margin:0 0 18px;max-width:60ch}
+
+  /* ---------- panels ---------- */
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px}
+  .panel h2{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em;margin:0 0 12px}
+
+  /* ---------- setup strip ---------- */
+  .setup-row{display:flex;gap:12px;align-items:flex-start}
+  .dot{width:10px;height:10px;border-radius:99px;flex:none;margin-top:3px}
+  .dot.ok{background:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
+  .dot.warn{background:var(--amber);box-shadow:0 0 0 4px var(--amber-soft)}
+  .setup-title{font-size:14.5px;font-weight:600;color:var(--text)}
+  .setup-meta{font-size:12.5px;color:var(--muted);margin:2px 0 0}
+
+  /* ---------- saved note (inline, returns after a save) ---------- */
+  .saved-note{display:none;margin:0 0 10px;font-size:12.5px;color:var(--teal);background:var(--teal-soft);border:1px solid rgba(45,212,164,.30);border-radius:12px;padding:9px 12px}
+  .saved-note b{font-family:"JetBrains Mono",monospace;font-size:12px}
+
+  /* ---------- task picker ---------- */
+  .task-card{
+    display:block;width:100%;text-align:left;
+    background:var(--surface-2);border:1px solid var(--line);
+    border-radius:14px;padding:13px 14px;margin:0 0 10px;
+    color:var(--text);font:inherit;cursor:pointer;
+    min-height:58px;
+  }
+  .task-card:last-of-type{margin-bottom:2px}
+  .task-card:hover,.task-card:focus-visible{border-color:rgba(45,212,164,.45);outline:none}
+  .task-card:focus-visible{box-shadow:0 0 0 3px var(--teal-soft)}
+  .tc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .tc-title{font-size:15.5px;font-weight:600}
+  .tc-tag{font-size:10.5px;font-weight:600;color:var(--teal);background:var(--teal-soft);border-radius:99px;padding:2.5px 8px;flex:none}
+  .tc-tag.amber{color:var(--amber);background:var(--amber-soft)}
+  .tc-desc{font-size:13.5px;color:var(--muted);margin:3px 0 0}
+  .tc-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+  .chip{font-family:"JetBrains Mono",monospace;font-size:11px;color:#c8d0da;background:rgba(255,255,255,.07);border:1px solid var(--line-soft);border-radius:7px;padding:3px 8px}
+
+  /* ---------- run view ---------- */
+  .run-cmd{font-family:"JetBrains Mono",monospace;font-size:12px;color:#c8d0da;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:10px;padding:8px 10px;margin:0 0 14px;overflow-wrap:anywhere}
+  .run-cmd .ps{color:var(--faint)}
+  .steps{display:flex;flex-direction:column;gap:9px}
+  .step{display:flex;align-items:flex-start;gap:10px;animation:pop .3s ease-out both;border:1px solid var(--line-soft);background:rgba(255,255,255,.03);border-radius:11px;padding:9px 11px}
+  @keyframes pop{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .step .kind{font-size:10.5px;font-weight:600;letter-spacing:.04em;flex:none;color:var(--muted);border-radius:99px;padding:2px 7px;min-width:40px;text-align:center}
+  .step .kind.tool{color:var(--teal);background:var(--teal-soft)}
+  .step .kind.skill{color:var(--violet);background:var(--violet-soft)}
+  .step .kind.denied{color:var(--amber);background:var(--amber-soft)}
+  .step .body{font-size:13px;min-width:0}
+  .step .body .nm{font-family:"JetBrains Mono",monospace;font-size:12px;color:#d5dbe4;font-weight:500}
+  .step .body .dt{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+  .thinking{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
+  .thinking .dots{display:inline-flex;gap:3px}
+  .thinking .dots i{width:4px;height:4px;border-radius:99px;background:var(--teal);animation:blink .9s infinite}
+  .thinking .dots i:nth-child(2){animation-delay:.15s}
+  .thinking .dots i:nth-child(3){animation-delay:.3s}
+  @keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+  .skip-row{display:flex;justify-content:flex-end;margin:10px 0 2px}
+  .skip-btn{background:none;border:none;color:var(--faint);font-size:12px;cursor:pointer;text-decoration:underline;padding:8px 10px;min-height:44px}
+
+  /* ---------- outcome ---------- */
+  .outcome{border:1px solid var(--line);border-radius:14px;background:var(--surface-2);padding:15px 14px}
+  .status-pill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.03em;border-radius:99px;padding:5px 12px}
+  .status-pill.ok{color:#0d3327;background:var(--teal)}
+  .status-pill.warn{color:#3a2603;background:var(--amber)}
+  .status-pill .sdot{width:7px;height:7px;border-radius:99px;background:rgba(0,0,0,.35)}
+  .outcome h3{font-size:16px;font-weight:700;margin:12px 0 5px;letter-spacing:-.005em}
+  .outcome p{font-size:13.5px;color:var(--muted);margin:0 0 4px;line-height:1.5}
+  .acc-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+  .acc-chip{font-size:11px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 9px;background:rgba(255,255,255,.04)}
+  .fix-box{margin:10px 0 0;font-size:13px;color:var(--text);background:var(--amber-soft);border:1px solid rgba(245,165,36,.32);border-radius:11px;padding:9px 12px}
+  .fix-box .fix-h{font-weight:600;color:var(--amber);display:block;font-size:12.5px;margin-bottom:2px}
+
+  /* actions */
+  .actions{display:flex;flex-direction:column;gap:9px;margin:14px 0 0}
+  .btn{
+    display:block;width:100%;min-height:48px;
+    font-size:14.5px;font-weight:600;letter-spacing:.01em;
+    border-radius:12px;cursor:pointer;padding:0 14px;
+  }
+  .btn.primary{background:var(--teal);color:#0d3327;border:none}
+  .btn.primary:hover{background:var(--teal);filter:brightness(1.08)}
+  .btn.primary:disabled{opacity:.55;cursor:default}
+  .btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:rgba(255,255,255,.22)}
+  .btn.ghost.amber{color:var(--amber);border-color:rgba(245,165,36,.4)}
+  .btn.ghost.amber:hover{background:var(--amber-soft)}
+  .btn:focus-visible{box-shadow:0 0 0 3px var(--teal-soft);outline:none}
+
+  /* skill card (created by Save Skill) */
+  .skill-card{border:1px solid rgba(45,212,164,.35);background:rgba(45,212,164,.07);border-radius:14px;padding:13px 14px;margin:0 0 12px;animation:pop .35s ease-out both}
+  .skill-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .skill-slug{font-family:"JetBrains Mono",monospace;font-size:14px;font-weight:600;color:var(--teal)}
+  .skill-saved{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--teal);border:1px solid rgba(45,212,164,.4);border-radius:99px;padding:3px 9px}
+  .skill-note{font-size:12.5px;color:var(--muted);margin:5px 0 0}
+
+  /* footer */
+  .foot{font-size:11.5px;color:var(--faint);line-height:1.55;border-top:1px solid var(--line-soft);padding:12px 0 0;margin:10px 0 0}
+  .foot a{color:var(--muted)}
+
+  @media (prefers-reduced-motion){
+    .step{animation:none}
+    .thinking .dots i{animation:none;opacity:.6}
+    .skill-card{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="logo" aria-hidden="true"></span>
+    <span class="brand">Hermes <span class="dim">Agent</span></span>
+    <span class="ver">v0.9.1</span>
+  </header>
+
+  <h1 class="title">Your first useful task</h1>
+  <p class="lede">Setup is done. Pick a task, watch Hermes work with tools and skills, then save the win as a reusable skill.</p>
+
+  <section class="panel" aria-label="Setup status">
+    <div class="setup-row">
+      <span class="dot ok" aria-hidden="true"></span>
+      <div>
+        <div class="setup-title">Setup complete</div>
+        <div class="setup-meta">Anthropic provider connected · gateway ready · 3 sample tools enabled</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="saved-note" id="saved-note" aria-live="polite"></div>
+
+  <section class="panel" id="step-pick" aria-label="Step 1, pick a task">
+    <h2>1 · Pick a starter task</h2>
+    <button class="task-card" type="button" data-task="summarize">
+      <span class="tc-top">
+        <span class="tc-title">Summarize this folder</span>
+        <span class="tc-tag">Recommended</span>
+      </span>
+      <span class="tc-desc">Understand ~/notes and list the top 3 files to open next.</span>
+      <span class="tc-chips"><span class="chip">read_folder</span><span class="chip">summarize</span></span>
+    </button>
+    <button class="task-card" type="button" data-task="updates">
+      <span class="tc-top">
+        <span class="tc-title">Turn meeting notes into a tracker</span>
+      </span>
+      <span class="tc-desc">Pull action items from notes.md into a checklist you can reuse.</span>
+      <span class="tc-chips"><span class="chip">read_file</span><span class="chip">checklist-builder</span></span>
+    </button>
+    <button class="task-card" type="button" data-task="tidy">
+      <span class="tc-top">
+        <span class="tc-title">Tidy your downloads</span>
+        <span class="tc-tag amber">May stall</span>
+      </span>
+      <span class="tc-desc">Sort 37 loose files into labeled folders in one pass.</span>
+      <span class="tc-chips"><span class="chip">scan_folder</span><span class="chip">move_file</span></span>
+    </button>
+  </section>
+
+  <section class="panel" id="step-run" hidden aria-label="Step 2, run view" aria-live="polite">
+    <h2>2 · Hermes is working</h2>
+    <div class="run-cmd"><span class="ps">$</span> <span id="run-cmd-text"></span></div>
+    <div class="steps" id="steps"></div>
+    <div class="skip-row"><button type="button" class="skip-btn" id="skip-btn">Skip to result →</button></div>
+  </section>
+
+  <section class="panel" id="step-outcome" hidden aria-label="Step 3, result" aria-live="polite">
+    <h2>3 · Result</h2>
+    <div id="outcome-view"></div>
+  </section>
+
+  <p class="foot">Prototype for the Hermes Agent PM seat. All data is synthetic: no real accounts, tools, or files are touched.
+  Explore <a href="https://hermes-agent.nousresearch.com/" target="_blank" rel="noopener">Hermes Agent</a>.</p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TASKS = {
+    summarize: {
+      title: "Summarize this folder",
+      cmd: 'hermes run "Summarize this folder, list the top 3 files to open next"',
+      steps: [
+        { kind: "step",  label: "Planning", detail: "Breaking the task into steps" },
+        { kind: "tool",  label: "read_folder", detail: "Found 14 files in ~/notes" },
+        { kind: "tool",  label: "read_file", detail: "Read requirements.md and design.md (2,100 words)" },
+        { kind: "skill", label: "notes-template", detail: "Referenced skill · notes-template" },
+        { kind: "tool",  label: "summarize", detail: "Draft summary, 3 files highlighted" },
+        { kind: "step",  label: "Writing summary.md", detail: "Saved to ~/notes/summary.md" }
+      ],
+      outcome: {
+        status: "ok",
+        head: "summary.md is ready, top 3 files listed",
+        body: "Hermes read 14 files, kept the summary in your notes-template style, and flagged requirements.md, design.md, and api.md as the files to open next.",
+        chips: ["Task done", "3 tools used", "Skill linked"]
+      },
+      skill: { slug: "summarize-folder", note: "Runs again in one step. Same tools, your template, zero re-typing." }
+    },
+
+    updates: {
+      title: "Turn meeting notes into a tracker",
+      cmd: 'hermes run "Turn notes.md into an action-item tracker"',
+      steps: [
+        { kind: "step",  label: "Planning", detail: "Breaking the task into steps" },
+        { kind: "tool",  label: "read_file", detail: "Read notes.md (840 words)" },
+        { kind: "skill", label: "checklist-builder", detail: "Referenced skill · checklist-builder" },
+        { kind: "tool",  label: "extract", detail: "Pulled 6 action items with owners" },
+        { kind: "step",  label: "Writing tracker.md", detail: "Saved to ~/notes/tracker.md" }
+      ],
+      outcome: {
+        status: "ok",
+        head: "tracker.md is ready, 6 action items pulled",
+        body: "Hermes turned the meeting notes into a checklist with owners and due dates, using your checklist-builder skill.",
+        chips: ["Task done", "2 tools used", "Skill linked"]
+      },
+      skill: { slug: "meeting-updates", note: "Runs again in one step. Next meeting notes update the same tracker." }
+    },
+
+    tidy: {
+      title: "Tidy your downloads",
+      cmd: 'hermes run "Sort downloads into labeled folders"',
+      steps: [
+        { kind: "step",  label: "Planning", detail: "Breaking the task into steps" },
+        { kind: "tool",  label: "scan_folder", detail: "Found 37 files in ~/Downloads" },
+        { kind: "tool",  label: "move_file", detail: "Denied · folder path missing (downloads/work)", denied: true }
+      ],
+      stall: {
+        status: "warn",
+        head: "Hermes stalled on Tidy your downloads",
+        body: "It scanned 37 files but could not move any. The target folder path is missing, so the tool was denied.",
+        fix: "Fix · add the downloads work folder in Setup, then retry."
+      },
+      retrySteps: [
+        { kind: "step",  label: "Planning", detail: "Setup updated with downloads/work" },
+        { kind: "tool",  label: "scan_folder", detail: "Found 37 files in ~/Downloads" },
+        { kind: "tool",  label: "move_file", detail: "Moved 37 files into downloads/work" },
+        { kind: "step",  label: "Writing tidy-log.md", detail: "Logged every move" }
+      ],
+      outcome: {
+        status: "ok",
+        head: "Downloads are tidy, 37 files sorted",
+        body: "With the folder path set, Hermes sorted 37 files into labeled folders and logged every move.",
+        chips: ["Task done", "Tool used", "Folders created"]
+      },
+      skill: { slug: "tidy-downloads", note: "Runs again in one step. New downloads get sorted the same way." }
+    }
+  };
+
+  var $ = function(id){ return document.getElementById(id); };
+  var pick = $("step-pick"), run = $("step-run"), out = $("step-outcome");
+  var stepsEl = $("steps"), outView = $("outcome-view"), skipBtn = $("skip-btn");
+  var running = false, skipFlag = false;
+  var badge = { step: "run", tool: "tool", skill: "skill", write: "run" };
+
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  function hide(el){ el.hidden = true; }
+  function show(el){ el.hidden = false; }
+
+  function resetViews(){
+    hide(run); hide(out);
+    show(pick);
+    skipBtn.style.visibility = "hidden";
+  }
+
+  function addStepRow(step, last){
+    var row = document.createElement("div");
+    row.className = "step";
+    var kindTxt = step.denied ? "denied" : badge[step.kind] || "run";
+    var kind = document.createElement("span");
+    kind.className = "kind " + kindTxt;
+    kind.textContent = kindTxt;
+    var body = document.createElement("span");
+    body.className = "body";
+    var nm = document.createElement("span");
+    nm.className = "nm";
+    nm.textContent = step.label;
+    body.appendChild(nm);
+    if (step.detail){
+      var dt = document.createElement("span");
+      dt.className = "dt";
+      dt.textContent = step.detail;
+      body.appendChild(dt);
+    }
+    row.appendChild(kind); row.appendChild(body);
+    if (last){ stepsEl.appendChild(row); } else { stepsEl.insertBefore(row, stepsEl.firstChild); }
+    return row;
+  }
+
+  function thinkingRow(on){
+    if (on){
+      var t = document.createElement("div");
+      t.className = "thinking";
+      t.id = "thinking-row";
+      var d = document.createElement("span");
+      d.textContent = "Thinking";
+      var dots = document.createElement("span");
+      dots.className = "dots";
+      var i1 = document.createElement("i"), i2 = document.createElement("i"), i3 = document.createElement("i");
+      dots.appendChild(i1); dots.appendChild(i2); dots.appendChild(i3);
+      t.appendChild(d); t.appendChild(dots);
+      stepsEl.appendChild(t);
+    } else {
+      var row = $("thinking-row");
+      if (row){ row.remove(); }
+    }
+  }
+
+  function runSteps(steps, onDone){
+    running = true; skipFlag = false;
+    skipBtn.style.visibility = "visible";
+    stepsEl.textContent = "";
+    var i = 0;
+    var tick = function(){
+      if (!running){ return; }
+      var fast = skipFlag;
+      if (i < steps.length){
+        addStepRow(steps[i], true);
+        i++;
+        setTimeout(tick, fast ? 60 : 620);
+      } else {
+        thinkingRow(true);
+        setTimeout(function(){
+          if (!running){ return; }
+          thinkingRow(false);
+          onDone();
+        }, fast ? 140 : 900);
+      }
+    };
+    setTimeout(tick, 420);
+  }
+
+  function stopRun(){
+    running = false;
+    skipFlag = false;
+    skipBtn.style.visibility = "hidden";
+  }
+
+  function pill(status){
+    var p = document.createElement("span");
+    p.className = "status-pill " + status;
+    var dot = document.createElement("span");
+    dot.className = "sdot";
+    p.appendChild(dot);
+    p.appendChild(document.createTextNode(status === "ok" ? "Succeeded" : "Stalled"));
+    return p;
+  }
+
+  function chip(txt){
+    var c = document.createElement("span");
+    c.className = "acc-chip";
+    c.textContent = txt;
+    return c;
+  }
+
+  function skillCard(skill){
+    var card = document.createElement("div");
+    card.className = "skill-card";
+    var head = document.createElement("div");
+    head.className = "skill-head";
+    var slug = document.createElement("span");
+    slug.className = "skill-slug";
+    slug.textContent = "skill/" + skill.slug;
+    var saved = document.createElement("span");
+    saved.className = "skill-saved";
+    saved.textContent = "Saved";
+    head.appendChild(slug); head.appendChild(saved);
+    var note = document.createElement("span");
+    note.className = "skill-note";
+    note.textContent = skill.note;
+    card.appendChild(head); card.appendChild(note);
+    return card;
+  }
+
+  function actionBtn(label, cls, handler){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn " + cls;
+    b.textContent = label;
+    b.addEventListener("click", handler);
+    return b;
+  }
+
+  function showOutcome(task, kind){
+    stopRun();
+    var isSuccess = kind === "ok";
+    var oc = isSuccess ? task.outcome : task.stall;
+    var el = document.createElement("div");
+    el.className = "outcome";
+    el.appendChild(pill(oc.status));
+    var h = document.createElement("h3");
+    h.textContent = oc.head;
+    el.appendChild(h);
+    var p = document.createElement("p");
+    p.textContent = oc.body;
+    el.appendChild(p);
+    if (!isSuccess){
+      var fix = document.createElement("div");
+      fix.className = "fix-box";
+      var fh = document.createElement("span");
+      fh.className = "fix-h";
+      fh.textContent = "One clear next step";
+      fix.appendChild(fh);
+      fix.appendChild(document.createTextNode(oc.fix));
+      el.appendChild(fix);
+    } else {
+      var chips = document.createElement("div");
+      chips.className = "acc-chips";
+      oc.chips.forEach(function(t){ chips.appendChild(chip(t)); });
+      el.appendChild(chips);
+    }
+    outView.textContent = "";
+    outView.appendChild(el);
+
+    var actions = document.createElement("div");
+    actions.className = "actions";
+
+    if (isSuccess){
+      var save = actionBtn("Make this a reusable skill", "primary", function(){
+        saveSkill(task);
+      });
+      actions.appendChild(save);
+      var again = actionBtn("Run again", "ghost", function(){
+        startTask(task, task.steps);
+      });
+      actions.appendChild(again);
+    } else {
+      var retry = actionBtn("Retry", "primary", function(){
+        startTask(task, task.retrySteps, true);
+      });
+      actions.appendChild(retry);
+    }
+    var other = actionBtn(isSuccess ? "Pick another task" : "Pick another task", "ghost" + (isSuccess ? "" : " amber"), function(){
+      hide(out); show(pick);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    actions.appendChild(other);
+
+    el.appendChild(actions);
+    outView.appendChild(el);
+    show(out);
+    window.scrollTo({ top: out.getBoundingClientRect().top + window.scrollY - 16, behavior: "smooth" });
+  }
+
+  function saveSkill(task){
+    var view = outView;
+    var btn = null;
+    for (var i = 0; i < view.children.length; i++){
+      var oc = view.children[i];
+      var act = null;
+      for (var j = 0; j < oc.children.length; j++){
+        var c = oc.children[j];
+        if (c.className === "actions"){ act = c; }
+      }
+      if (!act){ continue; }
+      for (var k = 0; k < act.children.length; k++){
+        var b = act.children[k];
+        if (b.textContent === "Make this a reusable skill"){ btn = b; }
+      }
+    }
+    if (!btn){ return; }
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    setTimeout(function(){
+      var oc = outView.querySelector(".outcome");
+      var card = skillCard(task.skill);
+      oc.insertBefore(card, oc.querySelector(".actions"));
+      btn.textContent = "Saved to your skills";
+      var note = $("saved-note");
+      note.textContent = "";
+      var b = document.createElement("b");
+      b.textContent = task.skill.slug;
+      note.appendChild(b);
+      note.appendChild(document.createTextNode(" saved as a skill. Runs again in one step."));
+      note.style.display = "block";
+    }, 800);
+  }
+
+  function startTask(task, steps, retryOnly){
+    hide(pick); hide(out);
+    show(run);
+    $("run-cmd-text").textContent = task.cmd;
+    var done = function(){
+      if (retryOnly){
+        showOutcome(task, "ok");
+      } else {
+        showOutcome(task, steps === task.steps && task.stall ? "warn" : "ok");
+      }
+    };
+    runSteps(steps, done);
+    window.scrollTo({ top: run.getBoundingClientRect().top + window.scrollY - 16, behavior: "smooth" });
+  }
+
+  skipBtn.addEventListener("click", function(){ if (running){ skipFlag = true; } });
+
+  document.querySelectorAll(".task-card").forEach(function(card){
+    card.addEventListener("click", function(){
+      var slug = card.getAttribute("data-task");
+      var task = TASKS[slug];
+      startTask(task, task.steps, false);
+    });
+  });
+
+  resetViews();
+})();
+</script>
+</body>
+</html>
